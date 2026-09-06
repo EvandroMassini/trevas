@@ -1,0 +1,23 @@
+{
+  "interruptHz": 60,
+  "binaryBytes": 18538,
+  "tests": [
+    "Boot from entry, own IM2 interrupts, keyboard SPACE starts game",
+    "TAP BASIC loader and binary blocks: lengths and checksums",
+    "SNA 48K size, stack entry point and embedded binary",
+    "Maze 1: connected objectives, BFS, pursuit, walls, 4 views per cell, real movement victory",
+    "Maze 2: connected objectives, BFS, pursuit, walls, 4 views per cell, real movement victory",
+    "Maze 3: connected objectives, BFS, pursuit, walls, 4 views per cell, real movement victory",
+    "Repel has exactly two charges",
+    "Monster contact triggers defeat",
+    "Real keyboard: held M toggles once; H pauses and resumes",
+    "Beeper writes recorded on port FE"
+  ],
+  "renderCycles": [
+    349508,
+    362164,
+    355070
+  ],
+  "note": "CPU instruction timing only; no ULA contention or real TK95 measured. Every walkable cell and direction rendered.",
+  "portWrites": 1613
+}
