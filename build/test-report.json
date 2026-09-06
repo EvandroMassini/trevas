@@ -1,6 +1,6 @@
 {
   "interruptHz": 50,
-  "binaryBytes": 18538,
+  "binaryBytes": 20868,
   "tests": [
     "Boot from entry, own IM2 interrupts, keyboard SPACE starts game",
     "TAP BASIC loader and binary blocks: lengths and checksums",
@@ -10,14 +10,23 @@
     "Maze 3: connected objectives, BFS, pursuit, walls, 4 views per cell, real movement victory",
     "Repel has exactly two charges",
     "Monster contact triggers defeat",
+    "TK95 regression: held O/P turns exactly 90 degrees; release bounce ignored; stable release rearms",
     "Real keyboard: held M toggles once; H pauses and resumes",
-    "Beeper writes recorded on port FE"
+    "Beeper writes recorded on port FE",
+    "Distinct beeper scores execute and finish silent; pickup and stun effects under 50ms CPU time"
   ],
   "renderCycles": [
-    349312,
-    362066,
-    354972
+    349890,
+    362546,
+    355550
   ],
+  "audioCycles": {
+    "music_title": 2404605,
+    "fx_seal": 149040,
+    "fx_repel": 147063,
+    "fx_win": 753286,
+    "fx_loss": 451495
+  },
   "note": "CPU instruction timing only; no ULA contention or real TK95 measured. Every walkable cell and direction rendered.",
-  "portWrites": 1613
+  "portWrites": 8728
 }

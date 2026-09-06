@@ -10,7 +10,7 @@ new Promise((resolve,reject)=>Module({arguments:['--tapbas','input.asm','output.
  const blocks=[];for(let p=0;p<tap.length;){const len=tap.readUInt16LE(p);blocks.push(tap.subarray(p+2,p+2+len));p+=len+2;}
  const bin=blocks.at(-1).subarray(1,-1);if(32768+bin.length>57344)throw Error('Code overlaps video buffer');
  fs.writeFileSync(path.join(root,'build/trevas.bin'),bin);
- const names='start main player monster direction seals charges stun game_over render bfs chase forward backward turn_left turn_right repel maze_0 maze_1 maze_2 spawn_table clock irq new_game ending visible_monster map_mode enemy_timer dirty last_loop wait_space_loop'.split(' ');
+ const names='start main player monster direction seals charges stun game_over render bfs chase forward backward turn_left turn_right repel maze_0 maze_1 maze_2 spawn_table clock irq new_game ending visible_monster map_mode enemy_timer dirty last_loop wait_space_loop play_fx music_title fx_seal fx_repel fx_win fx_loss turn_lock turn_release'.split(' ');
  const pos=bin.lastIndexOf('TREVASDBG');if(pos<0)throw Error('No debug footer');const symbols={};names.forEach((n,i)=>symbols[n]=bin.readUInt16LE(pos+9+i*2));fs.writeFileSync(path.join(root,'build/symbols.json'),JSON.stringify(symbols,null,2));
  // SNA starts at entry with a minimal self-contained RAM image (no ROM calls).
  const ram=Buffer.alloc(49152);bin.copy(ram,16384);ram.writeUInt16LE(32768,64766-16384);

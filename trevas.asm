@@ -29,39 +29,12 @@ start:
  ld i,a
  im 2
  ei
- call clear_screen
- ld hl,title
- ld b,2
- ld c,3
- call text
- ld hl,subtitle
- ld b,4
- ld c,5
- call text
- ld hl,intro1
- ld b,9
- ld c,1
- call text
- ld hl,intro2
- ld b,11
- ld c,1
- call text
- ld hl,intro3
- ld b,13
- ld c,1
- call text
- ld hl,intro4
- ld b,16
- ld c,1
- call text
- ld hl,intro5
- ld b,18
- ld c,1
- call text
- ld hl,intro6
- ld b,22
- ld c,4
- call text
+ xor a
+ ld (turn_lock),a
+ ld (turn_release),a
+ call show_title
+ ld hl,music_title
+ call play_fx
  call wait_space
 new_game:
  ld a,(clock)
@@ -95,6 +68,8 @@ chosen:
  ld (game_over),a
  ld (last_key),a
  ld (stun),a
+ ld (turn_lock),a
+ ld (turn_release),a
  ld a,17
  ld (player),a
  ld a,1
@@ -135,6 +110,8 @@ main:
  jr z,timers
  cp 5
  jr nc,timers
+ cp 3
+ jr nc,new_key
  ld a,(clock)
  ld hl,key_time
  sub (hl)
@@ -155,10 +132,10 @@ new_key:
  call z,backward
  ld a,(key)
  cp 3
- call z,turn_left
+ call z,input_left
  ld a,(key)
  cp 4
- call z,turn_right
+ call z,input_right
  ld a,(key)
  cp 5
  call z,repel
@@ -212,9 +189,8 @@ pulse_due:
  cp 10
  jr nc,quiet_pulse
  push af
- ld b,9
- ld c,150
- call tone
+ ld hl,fx_heartbeat
+ call play_fx
  pop af
 quiet_pulse:
  cp 20
@@ -236,9 +212,32 @@ maybe_render:
 
 irq:
  push af
+ push bc
  ld a,(clock)
  inc a
  ld (clock),a
+ ; Require O and P released for 3 consecutive video ticks before rearming.
+ ; Sampling here continues while the renderer and beeper are running.
+ ld bc,57342
+ in a,(c)
+ and 3
+ cp 3
+ jr nz,irq_turn_down
+ ld a,(turn_release)
+ cp 3
+ jr nc,irq_done
+ inc a
+ ld (turn_release),a
+ cp 3
+ jr nz,irq_done
+ xor a
+ ld (turn_lock),a
+ jr irq_done
+irq_turn_down:
+ xor a
+ ld (turn_release),a
+irq_done:
+ pop bc
  pop af
  ei
  reti
@@ -316,6 +315,24 @@ toggle_map:
  xor 1
  ld (map_mode),a
  jr mark_dirty
+input_left:
+ ld a,(turn_lock)
+ or a
+ ret nz
+ ld a,1
+ ld (turn_lock),a
+ xor a
+ ld (turn_release),a
+ jp turn_left
+input_right:
+ ld a,(turn_lock)
+ or a
+ ret nz
+ ld a,1
+ ld (turn_lock),a
+ xor a
+ ld (turn_release),a
+ jp turn_right
 turn_left:
  ld a,(direction)
  dec a
@@ -368,9 +385,8 @@ move:
  ld (hl),0
  ld hl,seals
  inc (hl)
- ld b,32
- ld c,25
- call tone
+ ld hl,fx_seal
+ call play_fx
 check_exit:
  ld a,(player)
  ld l,a
@@ -386,14 +402,12 @@ check_exit:
 moved:
  call reveal
  call bfs
- ld b,5
- ld c,60
- call tone
+ ld hl,fx_step
+ call play_fx
  jp mark_dirty
 bump:
- ld b,4
- ld c,210
- jp tone
+ ld hl,fx_bump
+ jp play_fx
 repel:
  ld a,(charges)
  or a
@@ -402,10 +416,33 @@ repel:
  ld (charges),a
  ld a,110
  ld (stun),a
- ld b,50
- ld c,60
- call tone
+ ld hl,fx_repel
+ call play_fx
  jp mark_dirty
+; Scores are pairs: edge count / pitch delay. Zero count terminates.
+; Pitch 0 is a rest. Game effects are short; longer phrases only in menus.
+play_fx:
+ ld b,(hl)
+ inc hl
+ ld a,b
+ or a
+ ret z
+ ld c,(hl)
+ inc hl
+ ld a,c
+ or a
+ jr z,fx_rest
+ call tone
+ jr play_fx
+fx_rest:
+ ld c,90
+fx_rest_outer:
+ ld e,c
+fx_rest_inner:
+ dec e
+ jr nz,fx_rest_inner
+ djnz fx_rest_outer
+ jr play_fx
 ; Short beeper effect. Interrupts remain enabled; no ROM or AY chip.
 tone:
  xor a
@@ -994,16 +1031,13 @@ ending:
  ld a,(game_over)
  cp 2
  jr z,victory
- ld hl,lost_text
- ld b,60
- ld c,180
- call tone
+ ld hl,fx_loss
+ call play_fx
  ld hl,lost_text
  jr ending_show
 victory:
- ld b,60
- ld c,30
- call tone
+ ld hl,fx_win
+ call play_fx
  ld hl,won_text
 ending_show:
  ld b,21
@@ -1015,6 +1049,60 @@ ending_show:
  call text
  call wait_space
  jp new_game
+
+show_title:
+ ld hl,title_screen
+ ld de,16384
+title_unpack:
+ ld a,(hl)
+ inc hl
+ or a
+ ret z
+ bit 7,a
+ jr nz,title_match
+ ld b,a
+title_run:
+ ld a,(hl)
+ inc hl
+ ld (de),a
+ inc de
+ djnz title_run
+ jr title_unpack
+title_match:
+ and 127
+ add a,3
+ ld (title_count),a
+ ld c,(hl)
+ inc hl
+ ld b,(hl)
+ inc hl
+ push hl
+ ld h,d
+ ld l,e
+ or a
+ sbc hl,bc
+ ld a,(title_count)
+ ld b,a
+title_match_loop:
+ ld a,(hl)
+ ld (de),a
+ inc hl
+ inc de
+ djnz title_match_loop
+ pop hl
+ jr title_unpack
+title_count: db 0
+
+fx_step: db 4,170,4,115,4,65,0
+fx_bump: db 8,215,6,160,6,240,0
+fx_heartbeat: db 8,190,18,0,6,155,0
+fx_seal: db 24,90,32,71,40,60,48,45,0
+fx_repel: db 8,180,8,150,10,120,12,90,16,60,20,40,24,25,12,50,10,100,0
+fx_loss: db 45,55,45,65,45,80,40,100,35,130,30,160,25,210,0
+fx_win: db 80,90,12,0,90,71,12,0,105,60,12,0,160,45,12,0,100,60,180,45,0
+music_title: db 100,120,16,0,100,90,16,0,100,80,16,0,160,71,30,0,100,90,16,0,100,120,16,0,180,142,35,0,100,120,16,0,100,90,16,0,120,71,16,0,220,60,0
+turn_lock: db 0
+turn_release: db 0
 
 directions: db 240,1,16,255
 compass: db "NLSO"
@@ -1086,4 +1174,5 @@ code_end:
  dw render,bfs,chase,forward,backward,turn_left,turn_right,repel
  dw maze_0,maze_1,maze_2,spawn_table,clock,irq,new_game,ending
  dw visible_monster,map_mode,enemy_timer,dirty,last_loop,wait_space_loop
+ dw play_fx,music_title,fx_seal,fx_repel,fx_win,fx_loss,turn_lock,turn_release
  end start

@@ -1,5 +1,15 @@
 # TREVAS — O Guardião do Labirinto
 
+## Versão 1.1 — teclado físico, áudio e apresentação
+
+O/P agora executam **somente um giro de 90° por toque**, sem repetição ao segurar. Para outro giro, solte ambas as teclas por pelo menos três interrupções de vídeo (50–60 ms) e pressione novamente. A leitura de soltura ocorre na interrupção, mesmo durante a renderização e os sons, filtrando oscilações breves do contato. Q/A mantêm a repetição para caminhar. Trocar diretamente de O para P sem soltar ambas não produz um segundo giro.
+
+A apresentação foi redesenhada com título grande, portal de pedra, tochas, lua e guardião. Ela toca uma breve melodia original antes de aceitar SPACE. Os novos efeitos incluem arpejo de coleta, varredura de atordoamento, batimento duplo, passos, colisão e frases de vitória e derrota. Continuam usando somente o beeper do TK95; os sons de coleta e atordoamento custam menos de 50 ms de CPU cada nos testes, e as frases longas ficam na abertura e no encerramento.
+
+`build/musica-apresentacao.wav` é uma prévia da melodia extraída das escritas na porta FE durante a execução Z80, com filtragem simples para reprodução. **Não é fita de carga**: para carregar o computador, use `build/trevas.wav`. O timbre do alto-falante real pode diferir da prévia.
+
+Esta revisão passou pela bateria anterior e por testes de O/P seguradas, oscilação de soltura, bloqueio de troca direta e novo toque após soltura estável, com interrupções de 50 e 60 Hz. A versão 1.0 foi relatada pelo usuário como funcional em emulador e no TK95, com dificuldade nos giros físicos; **a correção da versão 1.1 ainda precisa ser confirmada no aparelho**.
+
 Jogo original em assembly Z80, inspirado na exploração em primeira pessoa e na perseguição de Monster Maze. Destinado ao Microdigital TK95 e ao ZX Spectrum 48K. Código, labirintos, fonte e desenhos próprios; não contém código, ROM ou gráficos do jogo antigo.
 
 ## Jogar agora
@@ -34,7 +44,7 @@ Os bipes se tornam mais frequentes quando diminui a distância de percurso até 
 - Perseguição por busca em largura: o guardião segue o caminho mais curto, incluindo curvas.
 - Mapa que registra casas e paredes observadas; bússola, contagem de selos e alertas de proximidade.
 - Sons no beeper pela porta FE, sem depender de AY ou expansões.
-- Pausa, reinício após vitória/derrota e repetição de movimento ao segurar uma tecla.
+- Pausa, reinício após vitória/derrota, repetição ao caminhar e giro único por toque.
 
 ## Fluidez e compatibilidade
 
@@ -42,7 +52,7 @@ A movimentação é **por casas e giros de 90 graus**, sem rotação ou caminhad
 
 Os testes de CPU mediram cerca de **350–363 mil T-states nas cenas mais custosas**, aproximadamente 0,10 segundo de CPU a 3,5 MHz, antes da contenção da ULA e do restante do laço. Isso não equivale a uma medição de FPS no aparelho. Os temporizadores contam interrupções: em uma máquina de 60 Hz a perseguição e os pulsos ficam mais rápidos que em uma de 50 Hz.
 
-O jogo usa somente instruções Z80 documentadas, tela e teclado do Spectrum e beeper; após a carga, não faz chamadas à ROM. Foram executados testes em CPU Z80 emulada com interrupções de 50 e 60 Hz. **Ainda não foi validado em um TK95 físico nem em uma emulação completa da ULA/ROM.** A carga analógica, o som ouvido e o tempo real de vídeo precisam dessa validação.
+O jogo usa somente instruções Z80 documentadas, tela e teclado do Spectrum e beeper; após a carga, não faz chamadas à ROM. Foram executados testes em CPU Z80 emulada com interrupções de 50 e 60 Hz. A versão anterior já foi experimentada pelo usuário em emulador e no TK95; esta revisão ainda não foi validada no aparelho. A ferramenta de teste não reproduz a contenção da ULA, a carga analógica nem o alto-falante real.
 
 ## Conteúdo
 
@@ -91,7 +101,7 @@ pasmo --bin trevas.asm build/trevas.bin build/trevas.symbols
 
 O jogo inteiro executado no TK95 está em assembly. JavaScript serve apenas para gerar assets, montar arquivos e testar no computador de desenvolvimento. O teste verifica conectividade dos mapas, selos e portal, bloqueio de paredes, distâncias, perseguição, quatro direções em cada casa transitável, vitória pelo movimento real, derrota, pulsos, leitura de teclas, pausa, fita e snapshot. A verificação de áudio decodifica o WAV de volta aos quatro blocos TAP e compara byte a byte.
 
-Mapa de memória: código/dados em `8000h–C86Ah` aproximadamente; buffer em `E000h–EFFFh`; distâncias em `F200h`; fila em `F300h`; mapa em `F400h`; exploração em `F500h`; pilha abaixo de `FD00h`; salto de interrupção em `FDFDh`; tabela IM2 em `FE00h–FF00h`. O build rejeita qualquer crescimento do código até o buffer.
+Mapa de memória: código/dados em `8000h–D19Bh` aproximadamente; buffer em `E000h–EFFFh`; distâncias em `F200h`; fila em `F300h`; mapa em `F400h`; exploração em `F500h`; pilha abaixo de `FD00h`; salto de interrupção em `FDFDh`; tabela IM2 em `FE00h–FF00h`. O build rejeita qualquer crescimento do código até o buffer.
 
 ## Referências de implementação
 

@@ -49,5 +49,36 @@ A:['01110','10001','10001','11111','10001','10001','10001'],B:['11110','10001','
 '0':['01110','10001','10011','10101','11001','10001','01110'],'1':['00100','01100','00100','00100','00100','00100','01110'],'2':['01110','10001','00001','00010','00100','01000','11111'],'3':['11110','00001','00001','01110','00001','00001','11110'],'4':['00010','00110','01010','10010','11111','00010','00010'],'5':['11111','10000','10000','11110','00001','00001','11110'],'6':['01110','10000','10000','11110','10001','10001','01110'],'7':['11111','00001','00010','00100','01000','01000','01000'],'8':['01110','10001','10001','01110','10001','10001','01110'],'9':['01110','10001','10001','01111','00001','00001','01110'],
 '-':['00000','00000','00000','11111','00000','00000','00000'],':':['00000','00100','00100','00000','00100','00100','00000'],'/':['00001','00001','00010','00100','01000','10000','10000'],'.':['00000','00000','00000','00000','00000','00100','00100'],'!':['00100','00100','00100','00100','00100','00000','00100']};
 const font=[];for(let c=32;c<91;c++)font.push(0,...(alphabet[String.fromCharCode(c)]||alphabet[' ']).map(r=>parseInt(r,2)<<2));emit('font',font);
+// Native Spectrum title art, generated from original pixel/vector primitives.
+const titlePix=new Uint8Array(256*192),attrs=new Uint8Array(768).fill(71);
+function tp(x,y,color=69){x=Math.round(x);y=Math.round(y);if(x<0||x>255||y<0||y>191)return;titlePix[y*256+x]=1;attrs[(y>>3)*32+(x>>3)]=color;}
+function tl(x,y,X,Y,color=69){const n=Math.max(Math.abs(X-x),Math.abs(Y-y));for(let i=0;i<=n;i++)tp(x+(X-x)*i/(n||1),y+(Y-y)*i/(n||1),color)}
+function rect(x,y,w,h,c){tl(x,y,x+w,y,c);tl(x+w,y,x+w,y+h,c);tl(x+w,y+h,x,y+h,c);tl(x,y+h,x,y,c)}
+function lettering(s,x,y,scale,c){for(let ch of s){let glyph=alphabet[ch]||alphabet[' '];for(let r=0;r<7;r++)for(let col=0;col<5;col++)if(glyph[r][col]==='1')for(let a=0;a<scale;a++)for(let b=0;b<scale;b++)tp(x+col*scale+a,y+r*scale+b,c);x+=6*scale;}}
+function centered(s,y,c=71){lettering(s,Math.floor((256-s.length*6)/2),y,1,c)}
+// Weathered border, a moon and a sparse night sky.
+rect(3,3,249,185,65);rect(6,6,243,179,65);
+for(let n=0;n<85;n++){let x=12+(n*71)%232,y=10+(n*37)%122;if(y<45||x<48||x>208)tp(x,y,65)}
+for(let y=-10;y<=10;y++)for(let x=-10;x<=10;x++)if(x*x+y*y<100&&(x+5)*(x+5)+(y-2)*(y-2)>85)tp(224+x,24+y,71);
+lettering('TREVAS',57,18,4,70);
+centered('O GUARDIAO DO LABIRINTO',48,71);
+// Two massive columns and an ancient lintel frame the creature.
+for(let x of [56,184]){rect(x,73,15,59,69);rect(x-4,68,23,5,69);rect(x-4,132,23,5,69);for(let y=81;y<132;y+=10){tl(x,y,x+15,y,69);tl(x+((y%20)?5:10),y,x+((y%20)?5:10),y+9,69);}}
+tl(72,73,100,63);tl(100,63,155,63);tl(155,63,183,73);
+tl(72,80,104,71);tl(104,71,151,71);tl(151,71,183,80);
+for(let x=84;x<179;x+=13)tl(x,69,x+3,77,69);
+for(let x of [38,216]){rect(x-2,98,4,22,70);for(let y=0;y<18;y++)for(let xx=-6;xx<=6;xx++)if(Math.abs(xx)<(18-y)/3)tp(x+xx,98-y,70);}
+// Hand-drawn guardian pixel art at 2x, with clear eye and fang cutouts.
+for(let y=0;y<beast.length;y++)for(let x=0;x<20;x++)if(beast[y][x]==='#')for(let a=0;a<2;a++)for(let b=0;b<2;b++)tp(108+x*2+a,84+y*2+b,66);
+for(let y of [138,141])tl(20,y,235,y,65);
+for(let x of [20,50,80,176,206,236])tl(128,132,x,141,65);
+centered('3 SELOS. 2 PULSOS. UMA SAIDA.',144,70);
+centered('Q/A ANDAR   O/P GIRAR   M MAPA',160,71);
+centered('SPACE ATORDOA   H PAUSA',168,71);
+centered('SPACE PARA ENTRAR',176,68);
+const scr=new Uint8Array(6912);for(let y=0;y<192;y++)for(let x=0;x<256;x++)if(titlePix[y*256+x])scr[((y&192)<<5)|((y&7)<<8)|((y&56)<<2)|(x>>3)]|=128>>(x&7);scr.set(attrs,6144);
+let packed=[],literal=[];const flush=()=>{if(literal.length){packed.push(literal.length,...literal);literal=[]}};
+for(let i=0;i<scr.length;){let best=0,offset=0;for(let d=1;d<=Math.min(i,4096);d++){if(scr[i]!==scr[i-d])continue;let n=1;while(n<130&&i+n<scr.length&&scr[i+n]===scr[i+n-d])n++;if(n>best){best=n;offset=d;if(n===130)break}}
+if(best>=4){flush();packed.push(128+best-3,offset&255,offset>>8);i+=best}else{literal.push(scr[i++]);if(literal.length===127)flush()}}flush();packed.push(0);emit('title_screen',packed);
 fs.writeFileSync(path.join(root,'assets.inc'),out);
 };
